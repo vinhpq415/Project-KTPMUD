@@ -6,20 +6,31 @@
 }
 
 <h2>@ViewData["Title"]</h2>
-
 <hr />
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        <strong>Lỗi:</strong> @TempData["Error"]
+    </div>
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
 
 <div class="card mb-4">
     <div class="card-header">
-        <i class="fas fa-plus-circle"></i> Ghi nhận xe vào bãi
+        Ghi nhận xe vào bãi
     </div>
     <div class="card-body">
-        <form asp-action="CheckIn" method="post" class="row g-3">
+        <form action="/Parking/CheckIn" method="post" class="row g-3">
 
             <div class="col-md-4">
-                <label class="form-label">Loại phương tiện</label>
-
-                <select name="vehicleType" id="vehicleType" class="form-select">
+                <label for="vehicleType" class="form-label">Loại phương tiện</label>
+                <select id="vehicleType" name="vehicleType" class="form-select">
                     <option value="0">Xe đạp</option>
                     <option value="1">Xe máy</option>
                     <option value="2">Xe máy điện</option>
@@ -28,36 +39,23 @@
             </div>
 
             <div class="col-md-4" id="licensePlateGroup">
-                <label class="form-label">Biển số xe</label>
-
-                <input type="text" name="licensePlate" id="licensePlate" class="form-control" />
+                <label for="licensePlate" class="form-label">Biển số xe</label>
+                <input type="text" id="licensePlate" name="licensePlate" class="form-control" />
             </div>
 
             <div class="col-md-4 align-self-end">
                 <button type="submit" class="btn btn-primary w-100">Xác nhận vào</button>
             </div>
         </form>
-
-@if (TempData["Error"] != null)
-{
-            <div class="alert alert-danger mt-3">
-                Lỗi: @TempData["Error"]
-            </div>
-}
-@if (TempData["SuccessMessage"] != null)
-{
-            <div class="alert alert-success mt-3">
-                @TempData["SuccessMessage"]
-            </div>
-}
-
+    </div>
+</div>
 
 <div class="card">
     <div class="card-header">
-        <i class="fas fa-parking"></i> Danh sách xe đang gửi
+        Danh sách xe đang gửi
     </div>
     <div class="card-body">
-        <table class="table table-striped table-hover">
+        <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Loại xe</th>
@@ -67,27 +65,36 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model)
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.VehicleType.ToString()</td>
+                            <td>
+                                @if (item.VehicleType == VehicleType.Bicycle)
+                                {
+                                    <span class="badge bg-secondary">Vé số: @item.TicketNumber</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info text-dark">@item.LicensePlate</span>
+                                }
+                            </td>
+                            <td>@item.TimeIn.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td>
+                                <form asp-action="CheckOut" method="post" style="display:inline;">
+                                    <input type="hidden" name="ticketId" value="@item.Id" />
+                                    <button type="submit" class="btn btn-danger btn-sm">Cho ra</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td>@item.VehicleType.ToString()</td>
-                        <td>
-                            @if (item.VehicleType == VehicleType.Bicycle)
-                            {
-                                <span class="badge bg-secondary">Vé số: @item.TicketNumber</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-info text-dark">@item.LicensePlate</span>
-                            }
-                        </td>
-                        <td>@item.TimeIn.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                        <td>
-                            <form asp-action="CheckOut" method="post" onsubmit="return confirm('Xác nhận cho xe này ra khỏi bãi?');">
-                                <input type="hidden" name="ticketId" value="@item.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm">Cho ra</button>
-                            </form>
-                        </td>
+                        <td colspan="4" class="text-center">Chưa có xe nào trong bãi.</td>
                     </tr>
                 }
             </tbody>
@@ -97,17 +104,21 @@
 
 @section Scripts {
     <script>
-        document.getElementById('vehicleType').addEventListener('change', function () {
-            var licensePlateGroup = document.getElementById('licensePlateGroup');
-            // 0 là giá trị của 'Bicycle' trong Enum
-            if (this.value == '0') {
-                licensePlateGroup.style.display = 'none';
-            } else {
-                licensePlateGroup.style.display = 'block';
-            }
-        });
+        // Script ẩn hiện biển số khi chọn xe đạp
+        var typeSelect = document.getElementById('vehicleType');
+        var plateGroup = document.getElementById('licensePlateGroup');
+        var plateInput = document.getElementById('licensePlate');
 
-        // Kích hoạt sự kiện change lúc tải trang
-        document.getElementById('vehicleType').dispatchEvent(new Event('change'));
+        function togglePlateInput() {
+            if (typeSelect.value == '0') { // 0 là Xe đạp
+                plateGroup.style.display = 'none';
+                plateInput.value = '';
+            } else {
+                plateGroup.style.display = 'block';
+            }
+        }
+
+        typeSelect.addEventListener('change', togglePlateInput);
+        togglePlateInput(); // Chạy 1 lần lúc mới tải trang
     </script>
 }

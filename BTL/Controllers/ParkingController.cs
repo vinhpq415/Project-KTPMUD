@@ -28,18 +28,19 @@ namespace BTL.Controllers
             return View(activeTickets);
         }
 
-        // POST: Ghi nhận xe vào bãi
         [HttpPost]
-        public async Task<IActionResult> CheckIn(VehicleType vehicleType, string? licensePlate)
+        public async Task<IActionResult> CheckIn(int vehicleType, string? licensePlate)
         {
+            // 1. Khởi tạo đối tượng
             var newTicket = new ParkingTicket
             {
-                VehicleType = vehicleType,
+                VehicleType = (VehicleType)vehicleType, // Ép kiểu số sang Enum
                 TimeIn = DateTime.Now,
                 IsActive = true
             };
 
-            if (vehicleType == VehicleType.Bicycle)
+            // 2. Xử lý logic
+            if (newTicket.VehicleType == VehicleType.Bicycle)
             {
                 var lastTicketNum = await _context.ParkingTickets
                     .Where(t => t.VehicleType == VehicleType.Bicycle)
@@ -58,21 +59,21 @@ namespace BTL.Controllers
                 newTicket.LicensePlate = licensePlate.ToUpper();
             }
 
+            // 3. Lưu vào Database
             try
             {
                 _context.ParkingTickets.Add(newTicket);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã nhận xe thành công!";
+                TempData["SuccessMessage"] = "Thêm xe thành công!";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Lỗi: " + ex.Message;
+                TempData["Error"] = "Lỗi hệ thống: " + ex.Message;
             }
 
+            // 4. Quay về trang danh sách (Để nhìn thấy xe vừa thêm)
             return RedirectToAction(nameof(Index));
         }
-
-        // POST: Ghi nhận xe ra bãi và tính phí
         [HttpPost]
         public async Task<IActionResult> CheckOut(int ticketId)
         {
