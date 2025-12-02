@@ -1,0 +1,119 @@
+﻿@model IEnumerable<BTL.Models.MonthlyTicket>
+@using BTL.Enums
+
+@{
+    ViewData["Title"] = "Quản lý Vé Tháng";
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary"><i class="fas fa-tasks"></i> Quản lý Đăng ký Vé Tháng</h2>
+    <hr />
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Họ tên / SĐT</th>
+                        <th>Biển số xe</th>
+                        <th>Loại xe</th>
+                        <th>Hạn dùng</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@item.CustomerName</strong><br />
+                                    <small class="text-muted">@item.PhoneNumber</small>
+                                </td>
+
+                                <td><span class="badge bg-info text-dark" style="font-size: 14px;">@item.LicensePlate</span></td>
+
+                                <td>
+                                    @switch (item.VehicleType)
+                                    {
+                                        case VehicleType.Bicycle:
+                                            <span>Xe đạp</span>
+                                            break;
+                                        case VehicleType.Motorbike:
+
+                                            <span>Xe máy</span>
+                                            break;
+                                        case VehicleType.Ebike:
+
+                                            <span>Xe điện</span>
+                                            break;
+                                        case VehicleType.Car:
+
+                                            <span>Ô tô</span>
+                                            break;
+                                    }
+                                </td>
+
+                                <td>
+                                    @item.ExpirationDate.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <td>
+                                    @if (item.IsApproved)
+                                    {
+                                        <span class="badge bg-success">✅ Đã duyệt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">⏳ Chờ duyệt</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (!item.IsApproved)
+                                    {
+                                        <form action="/Manager/ApproveTicket" method="post" style="display:inline;">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-success btn-sm fw-bold">
+                                                ✓ Duyệt ngay
+                                            </button>
+                                        </form>
+
+                                        <form action="/Manager/DeleteTicket" method="post" style="display:inline;" onsubmit="return confirm('Xóa vé này?');">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm ms-1">
+                                                ✗ Xóa
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form action="/Manager/DeleteTicket" method="post" style="display:inline;" onsubmit="return confirm('Hủy vé tháng này?');">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                Hủy vé
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Chưa có đăng ký nào.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

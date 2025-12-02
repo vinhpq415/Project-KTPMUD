@@ -28,6 +28,7 @@ namespace BTL.Controllers
             return View(activeTickets);
         }
 
+        // POST: Ghi nhận xe vào bãi (HÀM BẠN CẦN THAY THẾ)
         [HttpPost]
         public async Task<IActionResult> CheckIn(int vehicleType, string? licensePlate)
         {
@@ -39,9 +40,11 @@ namespace BTL.Controllers
                 IsActive = true
             };
 
-            // 2. Xử lý logic
+            // 2. Xử lý logic theo loại xe
             if (newTicket.VehicleType == VehicleType.Bicycle)
             {
+                // --- LOGIC XE ĐẠP ---
+                // Tìm số vé lớn nhất hiện có
                 var lastTicketNum = await _context.ParkingTickets
                     .Where(t => t.VehicleType == VehicleType.Bicycle)
                     .MaxAsync(t => (int?)t.TicketNumber) ?? 0;
@@ -51,12 +54,30 @@ namespace BTL.Controllers
             }
             else
             {
+                // --- LOGIC XE MÁY / Ô TÔ ---
+
+                // a. Kiểm tra nhập trống
                 if (string.IsNullOrEmpty(licensePlate))
                 {
                     TempData["Error"] = "Vui lòng nhập biển số xe.";
                     return RedirectToAction(nameof(Index));
                 }
-                newTicket.LicensePlate = licensePlate.ToUpper();
+
+                // Chuẩn hóa biển số (In hoa)
+                string normalizedPlate = licensePlate.ToUpper();
+
+                // b. KIỂM TRA TRÙNG BIỂN SỐ
+                // Kiểm tra xem xe này có đang ở trong bãi không (IsActive = true)
+                bool isDuplicate = await _context.ParkingTickets
+                    .AnyAsync(t => t.LicensePlate == normalizedPlate && t.IsActive == true);
+
+                if (isDuplicate)
+                {
+                    TempData["Error"] = $"Xe biển số {normalizedPlate} đang ở trong bãi rồi! Vui lòng kiểm tra lại.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                newTicket.LicensePlate = normalizedPlate;
             }
 
             // 3. Lưu vào Database
@@ -64,16 +85,24 @@ namespace BTL.Controllers
             {
                 _context.ParkingTickets.Add(newTicket);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Thêm xe thành công!";
+
+                // Tạo thông báo chi tiết
+                string info = newTicket.VehicleType == VehicleType.Bicycle
+                    ? $"Vé số {newTicket.TicketNumber}"
+                    : $"Biển số {newTicket.LicensePlate}";
+
+                TempData["SuccessMessage"] = $"Đã nhận xe thành công! ({info})";
             }
             catch (Exception ex)
             {
                 TempData["Error"] = "Lỗi hệ thống: " + ex.Message;
             }
 
-            // 4. Quay về trang danh sách (Để nhìn thấy xe vừa thêm)
+            // 4. Quay về trang danh sách
             return RedirectToAction(nameof(Index));
         }
+
+        // POST: Ghi nhận xe ra bãi và tính phí
         [HttpPost]
         public async Task<IActionResult> CheckOut(int ticketId)
         {
@@ -85,19 +114,41 @@ namespace BTL.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Tính toán phí và cập nhật trạng thái
+            // Cập nhật thông tin ra bãi
             ticket.TimeOut = DateTime.Now;
             ticket.IsActive = false;
 
-            // LỖI CỦA BẠN NẰM Ở VIỆC THIẾU 2 HÀM NÀY Ở DƯỚI
-            ticket.Fee = CalculateFee(ticket.VehicleType);
+            // --- KIỂM TRA VÉ THÁNG ---
+            // Tìm xem có vé tháng nào khớp biển số + đã duyệt + còn hạn không
+            var monthlyTicket = await _context.MonthlyTickets
+                .FirstOrDefaultAsync(m => m.LicensePlate == ticket.LicensePlate
+                                       && m.IsApproved == true
+                                       && m.ExpirationDate >= DateTime.Now);
+
+            string messageInfo = "";
+
+            if (monthlyTicket != null)
+            {
+                // CÓ VÉ THÁNG -> MIỄN PHÍ
+                ticket.Fee = 0;
+                int daysLeft = (monthlyTicket.ExpirationDate - DateTime.Now).Days;
+                messageInfo = $"<br/><span class='badge bg-success'>✅ XE VÉ THÁNG</span> <span class='badge bg-warning text-dark'>⏳ Còn hạn: {daysLeft} ngày</span>";
+            }
+            else
+            {
+                // KHÁCH VÃNG LAI -> TÍNH TIỀN
+                ticket.Fee = CalculateFee(ticket.VehicleType);
+                messageInfo = $"<br/>Phí thu: <span style='font-size: 20px; font-weight: bold; color: red;'>{ticket.Fee:N0}đ</span>";
+            }
 
             _context.ParkingTickets.Update(ticket);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Xe {GetVehicleIdentifier(ticket)} đã ra. Phí thu: {ticket.Fee:N0}đ";
+            TempData["SuccessMessage"] = $"Xe <b>{GetVehicleIdentifier(ticket)}</b> đã ra." + messageInfo;
             return RedirectToAction(nameof(Index));
         }
+
+        // --- Hàm hỗ trợ ---
         private decimal CalculateFee(VehicleType vehicleType)
         {
             switch (vehicleType)
@@ -122,6 +173,5 @@ namespace BTL.Controllers
             }
             return ticket.LicensePlate ?? "N/A";
         }
-
     }
 }

@@ -10,7 +10,8 @@ namespace BTL.Data
         }
 
         public DbSet<ParkingTicket> ParkingTickets { get; set; }
-
+        public DbSet<User> Users { get; set; }
+        public DbSet<MonthlyTicket> MonthlyTickets { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

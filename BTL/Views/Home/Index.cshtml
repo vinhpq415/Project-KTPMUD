@@ -1,8 +1,89 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Trang chủ";
+    // Lấy thông tin người dùng từ Session
+    var role = HttpContextAccessor.HttpContext.Session.GetString("Role");
+    var username = HttpContextAccessor.HttpContext.Session.GetString("Username");
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mt-4">
+    <h1 class="display-4 fw-bold text-primary">🅿️ HỆ THỐNG BÃI ĐỖ XE THÔNG MINH</h1>
+    <p class="lead text-muted">Giải pháp quản lý phương tiện An toàn - Hiệu quả - Nhanh chóng</p>
 </div>
+
+<hr class="my-4" />
+
+@if (string.IsNullOrEmpty(role))
+{
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-body text-center p-5">
+                    <h3 class="mb-4">Chào mừng bạn đến với hệ thống</h3>
+                    <p class="mb-4">Vui lòng đăng nhập để bắt đầu làm việc hoặc sử dụng dịch vụ.</p>
+
+                    <a href="/Account/Login" class="btn btn-primary btn-lg w-100 mb-3">
+                        <i class="fas fa-sign-in-alt"></i> Đăng nhập ngay
+                    </a>
+
+                    <div class="text-muted small">
+                        Hệ thống dành cho: Quản lý, Nhân viên bảo vệ và Khách hàng đăng ký vé tháng.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-success text-center">
+        Xin chào <strong>@username</strong>! Bạn đang đăng nhập với quyền: <span class="badge bg-dark">@role</span>
+    </div>
+
+    <div class="row mt-4 justify-content-center">
+
+        @if (role == "Guard" || role == "Admin")
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-primary">
+                    <div class="card-body text-center">
+                        <h1 class="display-1 text-primary">🚧</h1>
+                        <h4 class="card-title">Soát vé Ra/Vào</h4>
+                        <p class="card-text">Ghi nhận xe vào bãi, kiểm tra xe ra và tính tiền.</p>
+                        <a href="/Parking/Index" class="btn btn-primary w-100">Đi tới Bãi xe</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (role == "Admin")
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-danger">
+                    <div class="card-body text-center">
+                        <h1 class="display-1 text-danger">💰</h1>
+                        <h4 class="card-title">Quản lý Doanh thu</h4>
+                        <p class="card-text">Xem báo cáo thống kê doanh thu theo ngày, tháng.</p>
+                        <a href="/Manager/Revenue" class="btn btn-danger w-100">Xem Báo cáo</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (role == "Customer")
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-success">
+                    <div class="card-body text-center">
+                        <h1 class="display-1 text-success">🎫</h1>
+                        <h4 class="card-title">Vé tháng của tôi</h4>
+                        <p class="card-text">Đăng ký vé tháng mới hoặc gia hạn vé cũ.</p>
+                        <a href="/MonthlyTicket/Register" class="btn btn-success w-100">Đăng ký ngay</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

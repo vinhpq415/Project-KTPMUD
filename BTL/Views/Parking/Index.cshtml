@@ -17,7 +17,7 @@
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success">
-        @TempData["SuccessMessage"]
+        @Html.Raw(TempData["SuccessMessage"])
     </div>
 }
 
@@ -70,7 +70,24 @@
                     foreach (var item in Model)
                     {
                         <tr>
-                            <td>@item.VehicleType.ToString()</td>
+                            <td>
+                                @switch (item.VehicleType)
+                                {
+                                    case VehicleType.Bicycle:
+                                        <span>Xe đạp</span>
+                                        break;
+                                    case VehicleType.Motorbike:
+                                        <span>Xe máy</span>
+                                        break;
+                                    case VehicleType.Ebike:
+                                        <span class="text-primary">Xe máy điện</span>
+                                        break;
+                                    case VehicleType.Car:
+                                        <span class="text-danger fw-bold">Ô tô</span>
+                                        break;
+                                }
+                            </td>
+
                             <td>
                                 @if (item.VehicleType == VehicleType.Bicycle)
                                 {
@@ -81,11 +98,18 @@
                                     <span class="badge bg-info text-dark">@item.LicensePlate</span>
                                 }
                             </td>
+
                             <td>@item.TimeIn.ToString("dd/MM/yyyy HH:mm:ss")</td>
+
                             <td>
-                                <form asp-action="CheckOut" method="post" style="display:inline;">
+                                <form action="/Parking/CheckOut" method="post" style="display:inline;">
+
                                     <input type="hidden" name="ticketId" value="@item.Id" />
-                                    <button type="submit" class="btn btn-danger btn-sm">Cho ra</button>
+
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Bạn có chắc chắn muốn cho xe này ra?');">
+                                        Cho ra
+                                    </button>
                                 </form>
                             </td>
                         </tr>
