@@ -2,6 +2,6 @@
 {
     public enum VehicleType
     {
-        Bicycle, Motorbike, Car, Ebike
+        Bicycle, Motorbike, Ebike, Car
     }
 }
