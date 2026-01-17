@@ -8,8 +8,8 @@ builder.Services.AddControllersWithViews();
 
 // 1. Thêm dịch vụ Session và HttpContextAccessor
 builder.Services.AddControllersWithViews();
-builder.Services.AddSession(); // <--- THÊM DÒNG NÀY
-builder.Services.AddHttpContextAccessor(); // <--- THÊM DÒNG NÀY (Để lấy user ở file View)
+builder.Services.AddSession(); 
+builder.Services.AddHttpContextAccessor(); 
 
 // Cấu hình kết nối SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -24,9 +24,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// Nếu bạn đang chạy chế độ HTTP (như hướng dẫn sửa launchSettings ở trên), 
-// dòng UseHttpsRedirection này có thể giữ hoặc bỏ. 
-// Tạm thời cứ để đó, nó không gây lỗi crash.
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseSession();
@@ -39,5 +36,4 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// QUAN TRỌNG NHẤT: Lệnh này giữ cho server luôn chạy
 app.Run();

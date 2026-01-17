@@ -1,7 +1,6 @@
 ﻿@{
-    Layout = null; // Trang login đứng một mình, không dùng menu chung
+    Layout = null;
 }
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -17,7 +16,7 @@
         }
 
         .login-box {
-            width: 350px;
+            width: 400px; 
             padding: 30px;
             background: white;
             border-radius: 8px;
@@ -27,26 +26,39 @@
 </head>
 <body>
     <div class="login-box">
-        <h3 class="text-center mb-4">Đăng nhập</h3>
+        <h3 class="text-center mb-4 text-primary fw-bold">ĐĂNG NHẬP</h3>
 
-        @if (ViewBag.Error != null)
+        @if (TempData["Error"] != null)
         {
-            <div class="alert alert-danger">@ViewBag.Error</div>
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
         }
 
         <form action="/Account/Login" method="post">
             <div class="mb-3">
-                <label class="form-label">Tài khoản</label>
-                <input type="text" name="username" class="form-control" required />
+                <label class="form-label fw-bold">Tài khoản</label>
+                <input type="text" name="username" class="form-control" required placeholder="Nhập username..." />
             </div>
             <div class="mb-3">
-                <label class="form-label">Mật khẩu</label>
-                <input type="password" name="password" class="form-control" required />
+                <label class="form-label fw-bold">Mật khẩu</label>
+                <input type="password" name="password" class="form-control" required placeholder="Nhập password..." />
             </div>
-            <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Đăng nhập</button>
+
+            <div class="d-flex justify-content-between mt-3">
+                <a href="/Account/Register" class="text-decoration-none">Đăng ký mới</a>
+                <a href="/Account/ForgotPassword" class="text-decoration-none text-danger">Quên mật khẩu?</a>
+            </div>
         </form>
-        <div class="text-center mt-3">
-            <a href="/Home/Index">Quay về trang chủ</a>
+
+        <div class="text-center mt-4">
+            <hr />
+            <a href="/Home/Index" class="btn btn-outline-secondary btn-sm">Quay về trang chủ</a>
         </div>
     </div>
 </body>

@@ -132,7 +132,7 @@ namespace BTL.Controllers
                 // CÓ VÉ THÁNG -> MIỄN PHÍ
                 ticket.Fee = 0;
                 int daysLeft = (monthlyTicket.ExpirationDate - DateTime.Now).Days;
-                messageInfo = $"<br/><span class='badge bg-success'>✅ XE VÉ THÁNG</span> <span class='badge bg-warning text-dark'>⏳ Còn hạn: {daysLeft} ngày</span>";
+                messageInfo = $"<br/><span class='badge bg-success'>XE VÉ THÁNG</span> <span class='badge bg-warning text-dark'>Còn hạn: {daysLeft} ngày</span>";
             }
             else
             {

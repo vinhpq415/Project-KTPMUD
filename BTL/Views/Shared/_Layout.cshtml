@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BTL</title>
+    <title>@ViewData["Title"] - Smart Parking</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BTL.styles.css" asp-append-version="true" />
@@ -17,7 +17,7 @@
             <div class="container-fluid d-flex justify-content-between align-items-center">
 
                 <div class="d-flex align-items-center">
-                    <a class="navbar-brand me-4" href="/">BTL</a>
+                    <a class="navbar-brand me-4 fw-bold text-primary" href="/">Smart Parking</a>
 
                     @{
                         var userRole = HttpContextAccessor.HttpContext.Session.GetString("Role");
@@ -29,28 +29,29 @@
                             Home
                         </a>
 
-                        @if (userRole == "Admin")
+                        @if (userRole == "Admin" || userRole == "Guard")
                         {
+                            /* Cho phép cả Admin và Bảo vệ vào trang này */
                             <a class="nav-link text-primary me-3" href="/Parking/Index" style="font-weight: bold;">
-                                🚧 Quản lý Ra/Vào
+                                Quản lý Ra/Vào
                             </a>
                         }
 
                         @if (userRole == "Admin")
                         {
                             <a class="nav-link text-danger me-3" href="/Manager/Revenue" style="font-weight: bold;">
-                                💰 Doanh thu
+                                Doanh thu
                             </a>
 
                             <a class="nav-link text-danger me-3" href="/Manager/Tickets" style="font-weight: bold;">
-                                ✅ Duyệt vé tháng
+                                Duyệt vé tháng
                             </a>
                         }
 
                         @if (userRole == "Customer")
                         {
                             <a class="nav-link text-success me-3" href="/MonthlyTicket/Register" style="font-weight: bold;">
-                                🎫 Đăng ký vé tháng
+                                Đăng ký vé tháng
                             </a>
                         }
                     </div>
@@ -79,8 +80,8 @@
     </div>
 
     <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - BTL
+        <div class="container text-center">
+            &copy; 2025 - Hệ thống Quản lý Bãi đỗ xe Thông minh
         </div>
     </footer>
 

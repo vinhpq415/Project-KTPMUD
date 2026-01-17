@@ -6,7 +6,7 @@
 }
 
 <div class="container mt-4">
-    <h2 class="text-primary"><i class="fas fa-tasks"></i> Quản lý Đăng ký Vé Tháng</h2>
+    <h2 class="text-primary"> Quản lý Đăng ký Vé Tháng</h2>
     <hr />
 
     @if (TempData["SuccessMessage"] != null)
@@ -68,11 +68,11 @@
                                 <td>
                                     @if (item.IsApproved)
                                     {
-                                        <span class="badge bg-success">✅ Đã duyệt</span>
+                                        <span class="badge bg-success">Đã duyệt</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-dark">⏳ Chờ duyệt</span>
+                                        <span class="badge bg-warning text-dark">Chờ duyệt</span>
                                     }
                                 </td>
 
@@ -82,14 +82,14 @@
                                         <form action="/Manager/ApproveTicket" method="post" style="display:inline;">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <button type="submit" class="btn btn-success btn-sm fw-bold">
-                                                ✓ Duyệt ngay
+                                                Duyệt ngay
                                             </button>
                                         </form>
 
                                         <form action="/Manager/DeleteTicket" method="post" style="display:inline;" onsubmit="return confirm('Xóa vé này?');">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <button type="submit" class="btn btn-outline-danger btn-sm ms-1">
-                                                ✗ Xóa
+                                                Xóa
                                             </button>
                                         </form>
                                     }
