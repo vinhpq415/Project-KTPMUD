@@ -1,4 +1,4 @@
-﻿/*PHẦN 3. THÊM DỮ LIỆU DEMO */
+/*PHẦN 3. THÊM DỮ LIỆU DEMO */
 
 USE QuanLyBaiXe;
 GO
@@ -53,18 +53,6 @@ SET ThoiGianRa = DATEADD(HOUR, 2, ThoiGianVao),
     MaNhanVienRa = 2
 WHERE MaThe = 'VANG01'
   AND TrangThai = 0;
-
-/* Thanh toán cho xe vãng lai */
-INSERT INTO ThanhToan
-(MaLuotGui, MaNhanVienThu, TongTien)
-SELECT
-    LG.MaLuotGui,
-    2,
-    2 * LX.GiaTheoGio
-FROM LuotGuiXe LG
-JOIN TheXe T ON LG.MaThe = T.MaThe
-JOIN LoaiXe LX ON T.MaLoaiXe = LX.MaLoaiXe
-WHERE LG.MaThe = 'VANG01';
 
 
 
