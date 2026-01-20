@@ -33,32 +33,19 @@ Hệ thống hỗ trợ 3 nhóm người dùng riêng biệt:
 * **Tools:** Visual Studio 2022
 
 ## Installation
-1.  Clone hoặc tải source code về máy.
-2.  Mở file `appsettings.json`, kiểm tra chuỗi kết nối (Connection String). Mặc định dự án dùng LocalDB:
-    ```json
-    "ConnectionStrings": {
-      "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ParkingDb;Trusted_Connection=True;MultipleActiveResultSets=true"
-    }
-    ```
-### Bước 3: Khởi tạo Cơ sở dữ liệu (Migration)
-1.  Mở Visual Studio.
-2.  Vào menu **Tools** > **NuGet Package Manager** > **Package Manager Console**.
-3.  Chạy lệnh sau để tạo database và các bảng:
-    ```powershell
-    Update-Database
-    ```
-### Bước 4: Tạo tài khoản Đăng nhập (Seed Data)
-*Lưu ý: Hệ thống chưa có trang đăng ký cho Admin/Bảo vệ, bạn cần tạo tay trong Database lần đầu.*
+### Bước 1: Cài đặt Database
+Dự án sử dụng SQL Server LocalDB.
+1. Tìm thư mục **`SQL`** trong source code.
+2. Mở SQL Server, tạo database tên: `QuanLyBaiXe`.
+3. Chuột phải vào database đó chọn **New Query**.
+4. Chạy file `createtable.sql` để tạo bảng.
+5. Chạy file `demo.sql` để thêm dữ liệu mẫu.
 
-1.  Trong Visual Studio, mở **View** > **SQL Server Object Explorer**.
-2.  Đi tới: `(localdb)\MSSQLLocalDB` > `Databases` > `ParkingDb` > `Tables` > `dbo.Users`.
-3.  Click chuột phải chọn **View Data**.
-4.  Nhập thủ công 3 dòng dữ liệu sau (bỏ trống cột Id):
-- Username điền lần lượt **admin**, **baove**, **khach**
-- Password: Cả 3 hàng đều điền 123
-- Roll: điền lần lượt **Admin**, **Guard**, **Customer**
-### Bước 5: Chạy dự án
-Nhấn **F5** 
+### Bước 2: Chạy dự án
+1. Mở file `BTL.sln` bằng Visual Studio.
+2. Nhấn **F5** để chạy.
+3. Tài khoản Admin mặc định: `admin` / `123`.
+
 ## 📖 Quick Guide
 
 ### 1. Dành cho Admin
