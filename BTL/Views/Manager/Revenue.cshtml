@@ -1,64 +1,54 @@
-﻿@model IEnumerable<BTL.Models.ParkingTicket>
+﻿@model IEnumerable<BTL.Models.LuotGuiXe>
 
 @{
-    ViewData["Title"] = "Báo cáo Doanh thu";
+    ViewData["Title"] = "Doanh Thu";
 }
 
-<div class="container mt-4">
-    <h2 class="text-primary"><i class="fas fa-chart-line"></i> Báo cáo Doanh thu</h2>
-    <hr />
-
-    <div class="card bg-success text-white mb-4 shadow">
-        <div class="card-body text-center">
-            <h4 class="card-title">TỔNG DOANH THU THỰC TẾ</h4>
-            <h1 class="display-4 fw-bold">
-                @ViewBag.TotalRevenue.ToString("N0") đ
-            </h1>
-            <p>Tổng số lượt xe đã phục vụ: @Model.Count()</p>
+<div class="container pt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-danger fw-bold">💰 BÁO CÁO DOANH THU</h2>
+        <div class="bg-warning p-2 rounded fw-bold text-dark fs-5">
+            Tổng thu dự kiến: @ViewBag.TotalRevenue?.ToString("N0") VNĐ
         </div>
     </div>
 
-    <div class="card shadow">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Chi tiết lịch sử thu phí</h5>
-        </div>
-        <div class="card-body">
-            <table class="table table-hover table-bordered">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Biển số / Số vé</th>
-                        <th>Loại xe</th>
-                        <th>Thời gian vào</th>
-                        <th>Thời gian ra</th>
-                        <th>Số tiền thu</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>
-                                    @(item.LicensePlate ?? $"Vé xe đạp: {item.TicketNumber}")
-                                </td>
-                                <td>@item.VehicleType</td>
-                                <td>@item.TimeIn.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@item.TimeOut?.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td class="text-end fw-bold text-success">
-                                    @string.Format("{0:N0} đ", item.Fee)
-                                </td>
-                            </tr>
+    <table class="table table-striped border">
+        <thead class="table-dark">
+            <tr>
+                <th>Biển Số</th>
+                <th>Loại Xe</th>
+                <th>Giờ Vào</th>
+                <th>Giờ Ra</th>
+                <th>Thời gian gửi</th>
+                <th>Loại Vé</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="fw-bold">@item.BienSoXe</td>
+                    <td>@item.TheXe?.LoaiXe?.TenLoaiXe</td>
+                    <td>@item.ThoiGianVao.ToString("dd/MM HH:mm")</td>
+                    <td>@item.ThoiGianRa?.ToString("dd/MM HH:mm")</td>
+                    <td>
+                        @{
+                            var duration = item.ThoiGianRa - item.ThoiGianVao;
+                            <span>@duration?.ToString(@"hh\:mm")</span>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">Chưa có dữ liệu doanh thu.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+                    </td>
+                    <td>
+                        @if (item.TheXe?.LoaiVe == "Thang")
+                        {
+                            <span class="text-success fw-bold">Miễn phí (Vé tháng)</span>
+                        }
+                        else
+                        {
+                            <span class="text-secondary">Thu phí thường</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>

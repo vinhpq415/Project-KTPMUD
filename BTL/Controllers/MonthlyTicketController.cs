@@ -17,59 +17,56 @@ namespace BTL.Controllers
             _context = context;
         }
 
-        // GET: Hiển thị form đăng ký (/MonthlyTicket/Register)
+        // GET: Đăng ký vé tháng
         [HttpGet]
         public IActionResult Register()
         {
-            // Kiểm tra quyền: Chỉ tài khoản "Customer" mới được vào
-            var role = HttpContext.Session.GetString("Role");
-            if (role != "Customer")
+            return View();
+        }
+
+        // POST: Xử lý đăng ký
+        [HttpPost]
+        public async Task<IActionResult> Register(string licensePlate, int vehicleType)
+        {
+            // 1. Kiểm tra đăng nhập
+            string username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrEmpty(username))
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            return View();
-        }
+            // Lấy thông tin User từ DB mới
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == username);
+            if (user == null) return RedirectToAction("Login", "Account");
 
-        // POST: Xử lý khi bấm nút "Gửi đăng ký"
-        [HttpPost]
-        public async Task<IActionResult> Register(MonthlyTicket ticket)
-        {
-            // 1. Kiểm tra biển số (Bắt buộc)
-            if (string.IsNullOrEmpty(ticket.LicensePlate))
+            // 2. Tạo mã thẻ tự động
+            string maThe = "THANG_" + new Random().Next(1000, 9999);
+
+            // 3. Tạo đối tượng TheXe mới
+            var newTicket = new TheXe
             {
-                ViewBag.Error = "Vui lòng nhập biển số xe (hoặc mã định danh).";
-                return View(ticket);
-            }
+                MaThe = maThe,
+                MaLoaiXe = vehicleType,
+                MaBaiXe = 1,            // Mặc định bãi số 1
+                MaNguoiDangKy = user.MaNguoiDung,
+                BienSoDangKy = licensePlate,
+                LoaiVe = "Thang",
+                NgayBatDau = DateTime.Now,
+                NgayHetHan = DateTime.Now.AddDays(30),
+                TrangThai = 0
+            };
 
-            // 2. Kiểm tra trùng lặp: Biển số này đã có vé tháng CÒN HẠN chưa?
-            bool isExist = await _context.MonthlyTickets.AnyAsync(m =>
-                m.LicensePlate == ticket.LicensePlate &&
-                m.ExpirationDate >= DateTime.Now);
-
-            if (isExist)
-            {
-                ViewBag.Error = $"Xe biển số {ticket.LicensePlate} hiện đang có vé tháng còn hiệu lực!";
-                return View(ticket);
-            }
-
-            // 3. Thiết lập mặc định
-            ticket.ExpirationDate = DateTime.Now.AddMonths(1); // Mặc định đăng ký 1 tháng
-            ticket.IsApproved = false; // Mặc định là CHƯA DUYỆT (Chờ Admin duyệt)
-
-            // 4. Lưu vào Database
             try
             {
-                _context.MonthlyTickets.Add(ticket);
+                _context.TheXes.Add(newTicket);
                 await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng chờ Quản lý duyệt vé.";
+                TempData["SuccessMessage"] = "Đăng ký vé tháng thành công! Mã thẻ của bạn là: " + maThe;
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
             {
-                ViewBag.Error = "Lỗi hệ thống: " + ex.Message;
-                return View(ticket);
+                TempData["Error"] = "Lỗi: " + ex.Message;
+                return View();
             }
         }
     }

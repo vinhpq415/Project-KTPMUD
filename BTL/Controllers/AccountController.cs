@@ -1,8 +1,8 @@
 ﻿using BTL.Data;
-using BTL.Models; 
+using BTL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
@@ -30,25 +30,24 @@ namespace BTL.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string username, string password)
         {
-            // Tìm user trong DB (Dùng Async để không chặn luồng)
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == username && u.Password == password);
+            
+            var user = await _context.NguoiDungs
+                .FirstOrDefaultAsync(u => u.TenDangNhap == username && u.MatKhau == password);
 
             if (user != null)
             {
-                // Lưu Session
-                HttpContext.Session.SetString("Username", user.Username);
-                HttpContext.Session.SetString("Role", user.Role);
+                
+                HttpContext.Session.SetString("Username", user.TenDangNhap);
+                HttpContext.Session.SetString("Role", user.VaiTro); // VaiTro: Admin, Guard, Customer
 
-                // Điều hướng theo quyền
-                if (user.Role == "Admin") return RedirectToAction("Revenue", "Manager");
-                if (user.Role == "Guard") return RedirectToAction("Index", "Parking");
-                if (user.Role == "Customer") return RedirectToAction("Register", "MonthlyTicket");
+                // Điều hướng theo quyền (VaiTro)
+                if (user.VaiTro == "Admin") return RedirectToAction("Revenue", "Manager");
+                if (user.VaiTro == "Guard") return RedirectToAction("Index", "Parking");
+                if (user.VaiTro == "Customer") return RedirectToAction("Register", "MonthlyTicket");
 
                 return RedirectToAction("Index", "Home");
             }
 
-            // Dùng TempData để hiển thị lỗi nhất quán với các hàm khác
             TempData["Error"] = "Sai tài khoản hoặc mật khẩu!";
             return View();
         }
@@ -65,7 +64,7 @@ namespace BTL.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string username, string password, string confirmPassword)
         {
-            // Kiểm tra nhập liệu
+            
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
                 TempData["Error"] = "Vui lòng nhập đầy đủ thông tin.";
@@ -78,9 +77,9 @@ namespace BTL.Controllers
                 return View();
             }
 
-            // Kiểm tra trùng tên tài khoản
-            var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == username);
+            
+            var existingUser = await _context.NguoiDungs
+                .FirstOrDefaultAsync(u => u.TenDangNhap == username);
 
             if (existingUser != null)
             {
@@ -88,17 +87,17 @@ namespace BTL.Controllers
                 return View();
             }
 
-            // Tạo user mới
-            var newUser = new User
+            
+            var newUser = new NguoiDung
             {
-                Username = username,
-                Password = password,
-                Role = "Customer" // Mặc định là Khách hàng
+                TenDangNhap = username,
+                MatKhau = password,
+                VaiTro = "Customer" // Mặc định là Khách hàng
             };
 
             try
             {
-                _context.Users.Add(newUser);
+                _context.NguoiDungs.Add(newUser);
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng đăng nhập.";
@@ -123,7 +122,8 @@ namespace BTL.Controllers
         [HttpPost]
         public async Task<IActionResult> ForgotPassword(string username, string newPassword)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == username);
 
             if (user == null)
             {
@@ -131,9 +131,9 @@ namespace BTL.Controllers
                 return View();
             }
 
-            // Cập nhật mật khẩu mới
-            user.Password = newPassword;
-            _context.Users.Update(user);
+       
+            user.MatKhau = newPassword;
+            _context.NguoiDungs.Update(user);
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công! Hãy đăng nhập lại.";

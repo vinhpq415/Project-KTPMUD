@@ -1,148 +1,83 @@
-﻿@model IEnumerable<BTL.Models.ParkingTicket>
-@using BTL.Enums
+﻿@model IEnumerable<BTL.Models.LuotGuiXe>
 
 @{
-    ViewData["Title"] = "Quản lý bãi xe";
+    ViewData["Title"] = "Bãi Xe Hiện Tại";
 }
 
-<h2>@ViewData["Title"]</h2>
-<hr />
+<div class="container-fluid pt-3">
+    <h2 class="text-primary fw-bold border-bottom pb-2">📋 DANH SÁCH XE ĐANG GỬI</h2>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">
-        <strong>Lỗi:</strong> @TempData["Error"]
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@Html.Raw(TempData["SuccessMessage"])</div>
+    }
+
+    <div class="card shadow-sm mb-4 mt-3">
+        <div class="card-body bg-light">
+            <h5 class="card-title text-success fw-bold">Nhận xe vào bãi</h5>
+            <form action="/Parking/CheckIn" method="post" class="row g-3">
+                <div class="col-md-3">
+                    <select name="maLoaiXe" class="form-select">
+                        <option value="1">Xe máy</option>
+                        <option value="2">Ô tô</option>
+                        <option value="3">Xe đạp</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="bienSo" class="form-control" placeholder="Nhập biển số xe..." required />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100 fw-bold">Vào Bến</button>
+                </div>
+            </form>
+        </div>
     </div>
-}
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success">
-        @Html.Raw(TempData["SuccessMessage"])
-    </div>
-}
 
-<div class="card mb-4">
-    <div class="card-header">
-        Ghi nhận xe vào bãi
-    </div>
-    <div class="card-body">
-        <form action="/Parking/CheckIn" method="post" class="row g-3">
-
-            <div class="col-md-4">
-                <label for="vehicleType" class="form-label">Loại phương tiện</label>
-                <select id="vehicleType" name="vehicleType" class="form-select">
-                    <option value="0">Xe đạp</option>
-                    <option value="1">Xe máy</option>
-                    <option value="2">Xe máy điện</option>
-                    <option value="3">Xe ô tô</option>
-                </select>
-            </div>
-
-            <div class="col-md-4" id="licensePlateGroup">
-                <label for="licensePlate" class="form-label">Biển số xe</label>
-                <input type="text" id="licensePlate" name="licensePlate" class="form-control" />
-            </div>
-
-            <div class="col-md-4 align-self-end">
-                <button type="submit" class="btn btn-primary w-100">Xác nhận vào</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        Danh sách xe đang gửi
-    </div>
-    <div class="card-body">
-        <table class="table table-striped">
-            <thead>
+    <table class="table table-hover align-middle shadow-sm bg-white rounded">
+        <thead class="bg-primary text-white">
+            <tr>
+                <th>Mã Thẻ</th>
+                <th>Biển Số</th>
+                <th>Loại Xe</th>
+                <th>Giờ Vào</th>
+                <th>Loại Vé</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
                 <tr>
-                    <th>Loại xe</th>
-                    <th>Biển số / Số vé</th>
-                    <th>Thời gian vào</th>
-                    <th>Thao tác</th>
+                    <td class="fw-bold text-secondary">@item.MaThe</td>
+                    <td class="fw-bold text-primary">@item.BienSoXe</td>
+                    <td>
+                        <span class="badge bg-info text-dark">
+                            @item.TheXe?.LoaiXe?.TenLoaiXe
+                        </span>
+                    </td>
+                    <td>@item.ThoiGianVao.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        @if (item.TheXe?.LoaiVe == "Thang")
+                        {
+                            <span class="badge bg-success">Vé Tháng</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Vãng Lai</span>
+                        }
+                    </td>
+                    <td>
+                        <form action="/Parking/CheckOut" method="post" style="display:inline;">
+                            <input type="hidden" name="ticketId" value="@item.MaLuotGui" />
+                            <button type="submit" class="btn btn-warning btn-sm fw-bold">Cho Xe Ra</button>
+                        </form>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var item in Model)
-                    {
-                        <tr>
-                            <td>
-                                @switch (item.VehicleType)
-                                {
-                                    case VehicleType.Bicycle:
-                                        <span>Xe đạp</span>
-                                        break;
-                                    case VehicleType.Motorbike:
-                                        <span>Xe máy</span>
-                                        break;
-                                    case VehicleType.Ebike:
-                                        <span class="text-primary">Xe máy điện</span>
-                                        break;
-                                    case VehicleType.Car:
-                                        <span class="text-danger fw-bold">Ô tô</span>
-                                        break;
-                                }
-                            </td>
-
-                            <td>
-                                @if (item.VehicleType == VehicleType.Bicycle)
-                                {
-                                    <span class="badge bg-secondary">Vé số: @item.TicketNumber</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-info text-dark">@item.LicensePlate</span>
-                                }
-                            </td>
-
-                            <td>@item.TimeIn.ToString("dd/MM/yyyy HH:mm:ss")</td>
-
-                            <td>
-                                <form action="/Parking/CheckOut" method="post" style="display:inline;">
-
-                                    <input type="hidden" name="ticketId" value="@item.Id" />
-
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Bạn có chắc chắn muốn cho xe này ra?');">
-                                        Cho ra
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="4" class="text-center">Chưa có xe nào trong bãi.</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        // Script ẩn hiện biển số khi chọn xe đạp
-        var typeSelect = document.getElementById('vehicleType');
-        var plateGroup = document.getElementById('licensePlateGroup');
-        var plateInput = document.getElementById('licensePlate');
-
-        function togglePlateInput() {
-            if (typeSelect.value == '0') { // 0 là Xe đạp
-                plateGroup.style.display = 'none';
-                plateInput.value = '';
-            } else {
-                plateGroup.style.display = 'block';
             }
-        }
-
-        typeSelect.addEventListener('change', togglePlateInput);
-        togglePlateInput();
-    </script>
-}
+        </tbody>
+    </table>
+</div>

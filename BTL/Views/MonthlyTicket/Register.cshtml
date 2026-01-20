@@ -1,71 +1,50 @@
-﻿@model BTL.Models.MonthlyTicket
-@using BTL.Enums
-
+﻿@model BTL.Models.TheXe
 @{
-    ViewData["Title"] = "Đăng ký vé tháng";
+    ViewData["Title"] = "Đăng Ký Vé Tháng";
 }
 
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow border-0">
-                <div class="card-header bg-success text-white text-center">
-                    <h3 class="mb-0 fw-bold">ĐĂNG KÝ VÉ THÁNG</h3>
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-header bg-success text-white text-center py-3">
+                    <h3 class="fw-bold mb-0">ĐĂNG KÝ VÉ THÁNG</h3>
                     <small>Tiết kiệm chi phí - Ra vào tiện lợi</small>
                 </div>
                 <div class="card-body p-4">
 
-                    @if (ViewBag.Error != null)
+                    @if (TempData["Error"] != null)
                     {
-                        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> @ViewBag.Error</div>
+                        <div class="alert alert-danger">@TempData["Error"]</div>
                     }
 
                     <form action="/MonthlyTicket/Register" method="post">
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h5 class="text-secondary mb-3 border-bottom pb-2">Thông tin chủ xe</h5>
-                                <div class="mb-3">
-                                    <label class="form-label">Họ và tên</label>
-                                    <input type="text" name="CustomerName" class="form-control" required placeholder="Nguyễn Văn A" />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Số điện thoại</label>
-                                    <input type="text" name="PhoneNumber" class="form-control" required placeholder="098xxxxxxxx" />
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <h5 class="text-secondary mb-3 border-bottom pb-2">Thông tin phương tiện</h5>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Loại xe</label>
-                                    <select id="vehicleType" name="VehicleType" class="form-select" onchange="updatePrice()">
-                                        <option value="0">Xe đạp</option>
-                                        <option value="1">Xe máy</option>
-                                        <option value="2">Xe máy điện</option>
-                                        <option value="3">Ô tô</option>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Biển số xe <span class="text-danger">*</span></label>
-                                    <input type="text" name="LicensePlate" class="form-control text-uppercase" required placeholder="VD: 29A-12345" />
-                                    <small class="text-muted">Nhập chính xác để hệ thống nhận diện.</small>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Loại xe</label>
+                            <select name="vehicleType" class="form-select" required>
+                                <option value="1">Xe máy</option>
+                                <option value="2">Ô tô</option>
+                                <option value="3">Xe đạp</option>
+                            </select>
                         </div>
 
-                        <hr />
-
-                        <div class="alert alert-warning text-center">
-                            <h5 class="mb-0">Chi phí dự kiến (1 tháng)</h5>
-                            <h2 class="fw-bold text-danger mt-2" id="priceDisplay">45.000 đ</h2>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Biển số xe *</label>
+                            <input type="text" name="licensePlate" class="form-control" placeholder="VD: 29A-12345" required />
+                            <div class="form-text text-muted">Nhập chính xác để hệ thống nhận diện.</div>
                         </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg fw-bold">Gửi đăng ký ngay</button>
-                            <a href="/" class="btn btn-outline-secondary">Quay lại trang chủ</a>
+                        <div class="alert alert-warning text-center mt-4">
+                            <span class="d-block text-muted">Chi phí dự kiến (1 tháng)</span>
+                            <h3 class="text-danger fw-bold my-1">45.000 đ</h3>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success fw-bold text-uppercase py-2">
+                                Gửi đăng ký ngay
+                            </button>
+                            <a href="/Home/Index" class="btn btn-outline-secondary">Quay lại trang chủ</a>
                         </div>
                     </form>
                 </div>
@@ -73,33 +52,3 @@
         </div>
     </div>
 </div>
-
-<script>
-    function updatePrice() {
-        // 1. Lấy giá trị từ ô chọn loại xe
-        var type = document.getElementById("vehicleType").value;
-        var display = document.getElementById("priceDisplay");
-        var price = "";
-
-        // 2. Logic giá tiền theo yêu cầu của bạn
-        switch (type) {
-            case "0": // Xe đạp
-                price = "45.000 đ";
-                break;
-            case "1": // Xe máy
-                price = "70.000 đ";
-                break;
-            case "2": // Xe máy điện
-                price = "100.000 đ";
-                break;
-            case "3": // Ô tô
-                price = "3.000.000 đ";
-                break;
-            default:
-                price = "0 đ";
-        }
-
-        // 3. Hiển thị lên màn hình
-        display.innerText = price;
-    }
-</script>

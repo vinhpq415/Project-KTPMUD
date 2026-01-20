@@ -1,8 +1,8 @@
 ﻿using BTL.Data;
-using BTL.Enums;
 using BTL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,160 +18,181 @@ namespace BTL.Controllers
             _context = context;
         }
 
-        // GET: Hiển thị danh sách xe đang gửi
+        // =============================================
+        // GET: Hiển thị danh sách xe ĐANG GỬI (TrangThai = 0)
+        // =============================================
         public async Task<IActionResult> Index()
         {
-            var activeTickets = await _context.ParkingTickets
-                                              .Where(t => t.IsActive)
-                                              .OrderByDescending(t => t.TimeIn)
-                                              .ToListAsync();
+            var activeTickets = await _context.LuotGuiXes
+                .Include(l => l.TheXe)
+                .ThenInclude(t => t.LoaiXe)
+                .Where(t => t.TrangThai == 0) // Lấy xe đang gửi
+                .OrderByDescending(t => t.ThoiGianVao)
+                .ToListAsync();
+
             return View(activeTickets);
         }
 
-        // POST: Ghi nhận xe vào bãi (HÀM BẠN CẦN THAY THẾ)
+        // =============================================
+        // POST: Ghi nhận xe VÀO bãi (CheckIn)
+        // =============================================
         [HttpPost]
-        public async Task<IActionResult> CheckIn(int vehicleType, string? licensePlate)
+        public async Task<IActionResult> CheckIn(int maLoaiXe, string? bienSo)
         {
-            // 1. Khởi tạo đối tượng
-            var newTicket = new ParkingTicket
+            // 1. Kiểm tra đăng nhập
+            string username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrEmpty(username)) return RedirectToAction("Login", "Account");
+
+            var staff = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == username);
+            if (staff == null) return RedirectToAction("Login", "Account");
+
+            // 2. Validate dữ liệu
+            if (string.IsNullOrEmpty(bienSo))
             {
-                VehicleType = (VehicleType)vehicleType, // Ép kiểu số sang Enum
-                TimeIn = DateTime.Now,
-                IsActive = true
-            };
-
-            // 2. Xử lý logic theo loại xe
-            if (newTicket.VehicleType == VehicleType.Bicycle)
-            {
-                // --- LOGIC XE ĐẠP ---
-                // Tìm số vé lớn nhất hiện có
-                var lastTicketNum = await _context.ParkingTickets
-                    .Where(t => t.VehicleType == VehicleType.Bicycle)
-                    .MaxAsync(t => (int?)t.TicketNumber) ?? 0;
-
-                newTicket.TicketNumber = (lastTicketNum % 9999) + 1;
-                newTicket.LicensePlate = null;
-            }
-            else
-            {
-                // --- LOGIC XE MÁY / Ô TÔ ---
-
-                // a. Kiểm tra nhập trống
-                if (string.IsNullOrEmpty(licensePlate))
-                {
-                    TempData["Error"] = "Vui lòng nhập biển số xe.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Chuẩn hóa biển số (In hoa)
-                string normalizedPlate = licensePlate.ToUpper();
-
-                // b. KIỂM TRA TRÙNG BIỂN SỐ
-                // Kiểm tra xem xe này có đang ở trong bãi không (IsActive = true)
-                bool isDuplicate = await _context.ParkingTickets
-                    .AnyAsync(t => t.LicensePlate == normalizedPlate && t.IsActive == true);
-
-                if (isDuplicate)
-                {
-                    TempData["Error"] = $"Xe biển số {normalizedPlate} đang ở trong bãi rồi! Vui lòng kiểm tra lại.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                newTicket.LicensePlate = normalizedPlate;
-            }
-
-            // 3. Lưu vào Database
-            try
-            {
-                _context.ParkingTickets.Add(newTicket);
-                await _context.SaveChangesAsync();
-
-                // Tạo thông báo chi tiết
-                string info = newTicket.VehicleType == VehicleType.Bicycle
-                    ? $"Vé số {newTicket.TicketNumber}"
-                    : $"Biển số {newTicket.LicensePlate}";
-
-                TempData["SuccessMessage"] = $"Đã nhận xe thành công! ({info})";
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = "Lỗi hệ thống: " + ex.Message;
-            }
-
-            // 4. Quay về trang danh sách
-            return RedirectToAction(nameof(Index));
-        }
-
-        // POST: Ghi nhận xe ra bãi và tính phí
-        [HttpPost]
-        public async Task<IActionResult> CheckOut(int ticketId)
-        {
-            var ticket = await _context.ParkingTickets.FindAsync(ticketId);
-
-            if (ticket == null || !ticket.IsActive)
-            {
-                TempData["Error"] = "Không tìm thấy vé xe.";
+                TempData["Error"] = "Vui lòng nhập biển số xe.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Cập nhật thông tin ra bãi
-            ticket.TimeOut = DateTime.Now;
-            ticket.IsActive = false;
+            string normalizedPlate = bienSo.ToUpper().Trim();
 
-            // --- KIỂM TRA VÉ THÁNG ---
-            // Tìm xem có vé tháng nào khớp biển số + đã duyệt + còn hạn không
-            var monthlyTicket = await _context.MonthlyTickets
-                .FirstOrDefaultAsync(m => m.LicensePlate == ticket.LicensePlate
-                                       && m.IsApproved == true
-                                       && m.ExpirationDate >= DateTime.Now);
+            // 3. Kiểm tra xe đã trong bãi chưa
+            bool isAlreadyIn = await _context.LuotGuiXes
+                .AnyAsync(l => l.BienSoXe == normalizedPlate && l.TrangThai == 0);
 
-            string messageInfo = "";
-
-            if (monthlyTicket != null)
+            if (isAlreadyIn)
             {
-                // CÓ VÉ THÁNG -> MIỄN PHÍ
-                ticket.Fee = 0;
-                int daysLeft = (monthlyTicket.ExpirationDate - DateTime.Now).Days;
-                messageInfo = $"<br/><span class='badge bg-success'>XE VÉ THÁNG</span> <span class='badge bg-warning text-dark'>Còn hạn: {daysLeft} ngày</span>";
+                TempData["Error"] = $"Xe {normalizedPlate} đang ở trong bãi rồi!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // 4. TÌM THẺ (Logic quan trọng đã sửa lỗi Null)
+            TheXe? theXeChon = null;
+
+            // A. Tìm xem có phải Vé Tháng không?
+            var veThang = await _context.TheXes
+                .FirstOrDefaultAsync(t => t.BienSoDangKy == normalizedPlate
+                                       && t.LoaiVe == "Thang"
+                                       && t.NgayHetHan >= DateTime.Now);
+
+            if (veThang != null)
+            {
+                // Kiểm tra trạng thái (Chấp nhận 0 hoặc null là rảnh)
+                if (veThang.TrangThai == 1)
+                {
+                    TempData["Error"] = "Thẻ tháng này đang được sử dụng.";
+                    return RedirectToAction(nameof(Index));
+                }
+                theXeChon = veThang;
             }
             else
             {
-                // KHÁCH VÃNG LAI -> TÍNH TIỀN
-                ticket.Fee = CalculateFee(ticket.VehicleType);
-                messageInfo = $"<br/>Phí thu: <span style='font-size: 20px; font-weight: bold; color: red;'>{ticket.Fee:N0}đ</span>";
+                // B. Khách Vãng Lai -> Tìm thẻ rảnh
+                // [FIX LỖI NULL Ở ĐÂY]: Chấp nhận TrangThai là 0 HOẶC NULL
+                var theRanh = await _context.TheXes
+                    .FirstOrDefaultAsync(t => t.LoaiVe == "VangLai"
+                                           && t.MaLoaiXe == maLoaiXe
+                                           && (t.TrangThai == 0 || t.TrangThai == null));
+
+                if (theRanh == null)
+                {
+                    TempData["Error"] = "Hết thẻ cho loại xe này (hoặc chưa tạo thẻ VangLai trong DB)!";
+                    return RedirectToAction(nameof(Index));
+                }
+                theXeChon = theRanh;
             }
 
-            _context.ParkingTickets.Update(ticket);
-            await _context.SaveChangesAsync();
+            // 5. Tạo lượt gửi
+            var luotGui = new LuotGuiXe
+            {
+                MaThe = theXeChon.MaThe,
+                MaBaiXe = 1,
+                BienSoXe = normalizedPlate,
+                ThoiGianVao = DateTime.Now,
+                MaNhanVienVao = staff.MaNguoiDung,
+                TrangThai = 0
+            };
 
-            TempData["SuccessMessage"] = $"Xe <b>{GetVehicleIdentifier(ticket)}</b> đã ra." + messageInfo;
+            // 6. Cập nhật thẻ thành BẬN
+            theXeChon.TrangThai = 1;
+
+            try
+            {
+                _context.LuotGuiXes.Add(luotGui);
+                _context.TheXes.Update(theXeChon);
+                await _context.SaveChangesAsync();
+
+                string loaiVe = theXeChon.LoaiVe == "Thang" ? "Vé Tháng" : "Vãng Lai";
+                TempData["SuccessMessage"] = $"Vào bến thành công! ({loaiVe})";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Lỗi: " + ex.Message;
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
-        // --- Hàm hỗ trợ ---
-        private decimal CalculateFee(VehicleType vehicleType)
+        // =============================================
+        // POST: Ghi nhận xe RA bãi (CheckOut)
+        // =============================================
+        [HttpPost]
+        public async Task<IActionResult> CheckOut(int ticketId)
         {
-            switch (vehicleType)
-            {
-                case VehicleType.Bicycle:
-                    return 3000;
-                case VehicleType.Motorbike:
-                case VehicleType.Ebike:
-                    return 5000;
-                case VehicleType.Car:
-                    return 15000;
-                default:
-                    return 0;
-            }
-        }
+            string username = HttpContext.Session.GetString("Username");
+            var staff = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.TenDangNhap == username);
+            if (staff == null) return RedirectToAction("Login", "Account");
 
-        private string GetVehicleIdentifier(ParkingTicket ticket)
-        {
-            if (ticket.VehicleType == VehicleType.Bicycle)
+            var luotGui = await _context.LuotGuiXes
+                .Include(l => l.TheXe)
+                .ThenInclude(t => t.LoaiXe)
+                .FirstOrDefaultAsync(l => l.MaLuotGui == ticketId);
+
+            if (luotGui == null || luotGui.TrangThai == 1)
             {
-                return $"Xe đạp (Vé số: {ticket.TicketNumber})";
+                TempData["Error"] = "Lỗi: Lượt gửi không tồn tại hoặc xe đã ra.";
+                return RedirectToAction(nameof(Index));
             }
-            return ticket.LicensePlate ?? "N/A";
+
+            // Tính tiền
+            DateTime timeOut = DateTime.Now;
+            double hours = (timeOut - luotGui.ThoiGianVao).TotalHours;
+            int hoursCharged = (int)Math.Ceiling(hours);
+            if (hoursCharged == 0) hoursCharged = 1;
+
+            decimal phiThu = 0;
+            string msgInfo = "";
+
+            if (luotGui.TheXe?.LoaiVe == "Thang")
+            {
+                phiThu = 0;
+                msgInfo = "<span class='badge bg-success'>VÉ THÁNG</span>";
+            }
+            else
+            {
+                // [FIX LỖI NULL]: Dùng toán tử ?? 0 để tránh lỗi nếu không tìm thấy giá
+                decimal giaTien = luotGui.TheXe?.LoaiXe?.GiaTheoGio ?? 0;
+                phiThu = (decimal)hoursCharged * giaTien;
+
+                msgInfo = $"<br/>{hoursCharged}h x {giaTien:N0}đ = <b class='text-danger'>{phiThu:N0}đ</b>";
+            }
+
+            // Cập nhật DB
+            luotGui.ThoiGianRa = timeOut;
+            luotGui.MaNhanVienRa = staff.MaNguoiDung;
+            luotGui.TrangThai = 1;
+
+            // Trả thẻ (Quan trọng: Kiểm tra null)
+            if (luotGui.TheXe != null)
+            {
+                luotGui.TheXe.TrangThai = 0; // Trả về rảnh
+                _context.TheXes.Update(luotGui.TheXe);
+            }
+
+            _context.LuotGuiXes.Update(luotGui);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Xe {luotGui.BienSoXe} đã ra." + msgInfo;
+            return RedirectToAction(nameof(Index));
         }
     }
 }

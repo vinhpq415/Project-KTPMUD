@@ -16,62 +16,57 @@ namespace BTL.Controllers
             _context = context;
         }
 
-        // GET: /Manager/Revenue (Trang Doanh thu)
+        // 1. Trang Doanh Thu (Revenue)
         public async Task<IActionResult> Revenue()
         {
-            // 1. Lấy tất cả xe ĐÃ RA (IsActive = false) để tính tiền
-            var tickets = await _context.ParkingTickets
-                .Where(t => t.IsActive == false && t.Fee != null)
-                .OrderByDescending(t => t.TimeOut) // Xe mới ra hiện lên đầu
+            // Lấy danh sách lượt xe ĐÃ RA (TrangThai = 1)
+            var history = await _context.LuotGuiXes
+                .Include(l => l.TheXe)
+                .ThenInclude(t => t.LoaiXe)
+                .Where(l => l.TrangThai == 1) // 1 là đã ra (đã hoàn thành)
+                .OrderByDescending(l => l.ThoiGianRa)
                 .ToListAsync();
 
-            // 2. Tính tổng doanh thu
-            decimal totalRevenue = tickets.Sum(t => t.Fee ?? 0);
+            // Tính tổng tiền (Logic đơn giản: Giờ * Giá)
+            decimal totalRevenue = 0;
+            foreach (var item in history)
+            {
+                if (item.TheXe.LoaiVe == "VangLai" && item.ThoiGianRa.HasValue)
+                {
+                    var hours = (item.ThoiGianRa.Value - item.ThoiGianVao).TotalHours;
+                    int hoursCharged = (int)System.Math.Ceiling(hours);
+                    if (hoursCharged == 0) hoursCharged = 1;
 
-            // 3. Gửi tổng tiền sang View để hiển thị
+                    totalRevenue += (decimal)hoursCharged * item.TheXe.LoaiXe.GiaTheoGio;
+                }
+            }
+
             ViewBag.TotalRevenue = totalRevenue;
-
-            return View(tickets);
+            return View(history);
         }
-        [HttpGet]
+
+        // 2. Trang Quản lý Vé tháng (Tickets)
         public async Task<IActionResult> Tickets()
         {
-            // Lấy danh sách, sắp xếp: Chưa duyệt lên đầu, rồi đến ngày đăng ký mới nhất
-            var tickets = await _context.MonthlyTickets
-                .OrderBy(t => t.IsApproved) // False (0) lên trước True (1)
-                .ThenByDescending(t => t.ExpirationDate)
+            // Lấy danh sách thẻ có LoaiVe là "Thang"
+            var monthlyTickets = await _context.TheXes
+                .Include(t => t.NguoiDung) // Để lấy tên người đăng ký
+                .Include(t => t.LoaiXe)
+                .Where(t => t.LoaiVe == "Thang")
                 .ToListAsync();
 
-            return View(tickets);
+            return View(monthlyTickets);
         }
 
-        // 2. Duyệt vé (Kích hoạt)
+        // Chức năng Xóa vé (Nếu cần)
         [HttpPost]
-        public async Task<IActionResult> ApproveTicket(int id)
+        public async Task<IActionResult> DeleteTicket(string id)
         {
-            var ticket = await _context.MonthlyTickets.FindAsync(id);
+            var ticket = await _context.TheXes.FindAsync(id);
             if (ticket != null)
             {
-                ticket.IsApproved = true; // Chuyển thành Đã duyệt
-                // Gia hạn thêm 30 ngày tính từ hôm nay (ngày duyệt)
-                ticket.ExpirationDate = DateTime.Now.AddDays(30);
-
+                _context.TheXes.Remove(ticket);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã duyệt vé cho xe {ticket.LicensePlate} thành công!";
-            }
-            return RedirectToAction(nameof(Tickets));
-        }
-
-        // 3. Xóa vé (Từ chối)
-        [HttpPost]
-        public async Task<IActionResult> DeleteTicket(int id)
-        {
-            var ticket = await _context.MonthlyTickets.FindAsync(id);
-            if (ticket != null)
-            {
-                _context.MonthlyTickets.Remove(ticket);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã xóa vé thành công.";
             }
             return RedirectToAction(nameof(Tickets));
         }
